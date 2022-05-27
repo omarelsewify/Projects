@@ -176,33 +176,37 @@ def cross_entropy_method_interior_point(f, x0, m, m_elite, rho, gamma, tol):
     def c(x):
         output = f(x)        
         
-        mle_c = output[0] - 0.2          # Max Lateral error constraint
-        mse_c = output[1] - 0.75         # Max Speed error constraint
-        may_c = output[2] - 4            # Max Lateral Acceleration
-        max_c = output[3] - 4            # Max Longitudinal Acceleration
+        mle_c = max(0.2 - output[0], 0)          # Max Lateral error constraint
+        mse_c = max(0.75 - output[1], 0)         # Max Speed error constraint
+        may_c = max(4 - output[2], 0)            # Max Lateral Acceleration
+        max_c = max(4 - output[3], 0)            # Max Longitudinal Acceleration
         
-        return [mle_c, mse_c, may_c, max_c]
+        # GAINS CANNOT BE NEGATIVE
+        K_la_c = max(-x[0], 0)
+        x_la_c = max(-x[1], 0)
+        K_long_c = max(-x[2], 0)
+        
+        return [mle_c, mse_c, may_c, max_c, K_la_c, x_la_c, K_long_c]
 
-    # Optimise quadratic penalty function
-    while sum(map(lambda i: i > 0, c(mean))) != 0:
-        quad_sum = []
-        samples = np.random.multivariate_normal(mean, cov_matrix,m)
+    # # Optimise quadratic penalty function
+    # while sum(map(lambda i: i > 0, c(mean))) != 0:
+    #     quad_sum = []
+    #     samples = np.random.multivariate_normal(mean, cov_matrix,m)
         
-        quad_constraints = [c(x) for x in samples]
+    #     quad_constraints = [c(x) for x in samples]
         
-        for constraint in quad_constraints:
-            quad_sum_temp = sum([max(ci,0)**2 for ci in constraint])
-            quad_sum.append(quad_sum_temp)
+    #     for constraint in quad_constraints:
+    #         quad_sum_temp = sum([max(ci,0)**2 for ci in constraint])
+    #         quad_sum.append(quad_sum_temp)
             
-        quad_order = np.argsort([x for x in quad_sum])    
-        quad_elite_samples = samples[quad_order[0:m_elite]]
+    #     quad_order = np.argsort([x for x in quad_sum])    
+    #     quad_elite_samples = samples[quad_order[0:m_elite]]
         
-        mean = np.array([sum(x)/len(x) for x in zip(*quad_elite_samples)])
+    #     mean = np.array([sum(x)/len(x) for x in zip(*quad_elite_samples)])
         
-        if np.count_nonzero(c(mean) > 0) == 0:
-            x_history.append(mean)
-            return x_history
-    
+    #     if np.count_nonzero(c(mean) > 0) == 0:
+    #         x_history.append(mean)
+    #         return x_history
     
     while delta > tol:
         
@@ -212,10 +216,10 @@ def cross_entropy_method_interior_point(f, x0, m, m_elite, rho, gamma, tol):
         
         IPM_sum_temp = 0
         for constraint in IPM_constraints:
-            IPM_sum_temp = sum([1/ci for ci in constraint])
+            IPM_sum_temp = sum([ci**2 for ci in constraint])
             IPM_sum.append(IPM_sum_temp)
         
-        min_function = [f(samples[i]) + (1/rho)*IPM_sum[i] for i in range(m)]
+        min_function = [f(samples[i]) + rho*IPM_sum[i] for i in range(m)]
    
         IPM_order = np.argsort([(sum(x))for x in min_function])    
         IPM_elite_samples = samples[IPM_order[0:m_elite]]
@@ -224,7 +228,8 @@ def cross_entropy_method_interior_point(f, x0, m, m_elite, rho, gamma, tol):
         
         delta = np.linalg.norm(mean - mean_old)
         mean_old = mean
-
+        x_history.append(mean)
+        
         rho *= gamma
 
     return x_history
@@ -233,10 +238,11 @@ def cross_entropy_method_interior_point(f, x0, m, m_elite, rho, gamma, tol):
 def basis(i,n):
     return [int(k == i) for k in range(n)]
 
-def hooke_jeeves(f, x, alpha, eps, gamma, rho):
+def hooke_jeeves(f, x0, alpha, eps, gamma, rho):
     
     x_history = []
-    n = len(x)
+    n = len(x0)
+    x_best = x0
     
     def c(x):
         output = f(x)        
@@ -247,9 +253,9 @@ def hooke_jeeves(f, x, alpha, eps, gamma, rho):
         max_c = max(4 - output[3], 0)            # Max Longitudinal Acceleration
         
         # GAINS CANNOT BE NEGATIVE
-        K_la_c = max(-x[0], 0)*np.Inf
-        x_la_c = max(-x[1], 0)*np.Inf
-        K_long_c = max(-x[2], 0)*np.Inf
+        K_la_c = max(-x[0], 0)
+        x_la_c = max(-x[1], 0)
+        K_long_c = max(-x[2], 0)
         
         return [mle_c, mse_c, may_c, max_c, K_la_c, x_la_c, K_long_c]
     
@@ -257,23 +263,23 @@ def hooke_jeeves(f, x, alpha, eps, gamma, rho):
         return  sum(f(x) + (sum(map(lambda i: i**2 , c(x))))*rho)
     
     while alpha > eps:
+        
         improved = False
-        x_best = x
         obj_best = obj_function(x_best,f,c,rho)
+        x = x_best
         
         for i in range(n): 
             for sgn in (-1,1):
                 vector = [sgn*alpha*idx for idx in basis(i,n)] 
-                x_temp = [x[i] + vector[i] for i in range(n)]
+                x_temp = [x[i]*(1 + vector[i]) for i in range(n)]
+                #eps = abs(min([x[i]*(vector[i]) for i in range(n)]))
                 obj_temp = obj_function(x_temp,f,c,rho)
                 
                 if obj_temp < obj_best:
                     x_best = x_temp
                     x_history.append(x_best)
                     improved = True
-        
-        x = x_best
-        
+                
         if improved == False:
             alpha *= gamma
     
@@ -318,11 +324,11 @@ for sim_mode in estimator_functions:
           np.random.uniform(min(k_long),max(k_long))]
     
     # t.tic()
-    # x_history = cross_entropy_method_interior_point(f, x0, m = 50, m_elite = 5, rho = 0.1, gamma = 1.2, tol = 0.01)
+    # x_history = cross_entropy_method_interior_point(f, x0, m = 50, m_elite = 10, rho = 25, gamma = 1.2, tol = 0.01)
     # t.toc()
     
     t.tic()
-    x_history = hooke_jeeves(f, x0, alpha = 0.5, eps = 0.01 , gamma = 0.5, rho = 5)
+    x_history = hooke_jeeves(f, x0, alpha = 0.1, eps = 0.0001 , gamma = 0.9, rho = 10)
     t.toc()
     
     x_best = x_history[-1]
@@ -342,9 +348,19 @@ for sim_mode in estimator_functions:
     writer.book = book
     writer.sheets = {ws.title: ws for ws in book.worksheets}
 
-    for sheetname in writer.sheets:
-        df.to_excel(writer,sheet_name=sheetname, startrow=writer.sheets[sheetname].max_row, index = False,header= False)
+    df.style.set_properties(**{'background-color': 'yellow','color': 'black'})
+    df.to_excel(writer,sheet_name='Sheet1', startrow=writer.sheets['Sheet1'].max_row, index = False,header= False)
 
     writer.save()
     
     plt.plot(range(len(x_history)),[x[0] for x in x_history])
+    plt.title('K_la evolution')
+    plt.show()
+    
+    plt.plot(range(len(x_history)),[x[1] for x in x_history])
+    plt.title('x_la evolution')
+    plt.show()
+    
+    plt.plot(range(len(x_history)),[x[2] for x in x_history])
+    plt.title('K_long evolution')
+    plt.show()
