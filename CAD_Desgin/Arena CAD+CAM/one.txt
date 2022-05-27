@@ -1,0 +1,24 @@
+Tool flute for operation 'Drill5' clashed with stock for rapid movement to position (1.00244in, 1.08322in, -0.05in).
+Tool flute for operation 'Drill6' clashed with stock for rapid movement to position (2.32143in, 1.686in, -0.1in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (1.86356in, 2.24327in, -0.12in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (1.68759in, 2.25913in, -0.191015in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (1.81251in, 1.24065in, -0.191015in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (0.905089in, 1.70973in, -0.041015in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (2.58322in, 2.11517in, -0.041015in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (2.33751in, 1.93986in, -0.091015in).
+Tool flute for operation 'Horizontal2' clashed with stock for rapid movement to position (1.16139in, 1.55832in, -0.091015in).
+Removed stock per operation:
+  Drill3: 0.022922in³ (1.6%)
+  Drill4: 0.003534in³ (0.2%)
+  Drill5: 0.01391in³ (0.9%)
+  Drill6: 0.006554in³ (0.4%)
+  Horizontal2: 1.2418in³ (84.4%)
+  Horizontal1: 0.168952in³ (11.5%)
+  Horizontal3: 0.01418in³ (1.0%)
+Removed stock per tool:
+  #4 - Ø3/16" 90° spot drill (3/16" Spot Drill): 0.006554in³ (0.4%)
+  #10 - Ø1/16" flat (1/16" Flat Endmill): 0.01418in³ (1.0%)
+  #1 - Ø1/4" 90° spot drill (1/4" Spot Drill): 0.036832in³ (2.5%)
+  #2 - Ø5/16" 90° spot drill (5/16" Spot Drill): 0.003534in³ (0.2%)
+  #5 - Ø1/4" flat (1/4" Flat Endmill): 1.2418in³ (84.4%)
+  #7 - Ø1/8" flat (1/8" Flat Endmill): 0.168952in³ (11.5%)
