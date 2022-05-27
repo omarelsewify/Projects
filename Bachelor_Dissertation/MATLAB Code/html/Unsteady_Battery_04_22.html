@@ -1,0 +1,522 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Unsteady_Battery_04_22</title><meta name="generator" content="MATLAB 9.4"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-26"><meta name="DC.source" content="Unsteady_Battery_04_22.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">FDM solver for Laplace's equation in 2D</a></li><li><a href="#3">Setting</a></li><li><a href="#4">Battery and Thermal Characteristics</a></li><li><a href="#5">Time parameters</a></li><li><a href="#6">Setting boundary conditions</a></li><li><a href="#7">Sensor 1</a></li><li><a href="#8">Sensor 2</a></li><li><a href="#9">Heat Flux Calculation</a></li><li><a href="#10">Plot results</a></li></ul></div><pre class="codeinput">clc,clear,close <span class="string">all</span>
+</pre><h2 id="2">FDM solver for Laplace's equation in 2D</h2><h2 id="3">Setting</h2><pre class="codeinput">disp(<span class="string">'Heat Conduction Equation solver for 2D Li-ion Battery'</span>)
+disp(<span class="string">' '</span>)
+
+<span class="comment">% Resolution</span>
+res = 120;               <span class="comment">% Multiples of 15 only</span>
+left1 = res/15;
+left2 = res*7/15;
+right1 = res*8/15;
+right2 = res*14/15;
+
+<span class="comment">% Width of domain</span>
+W = 0.2;
+
+<span class="comment">% Height of domain</span>
+L = 0.2;
+
+<span class="comment">% Grid spacing</span>
+gs = W / (res - 1);
+</pre><h2 id="4">Battery and Thermal Characteristics</h2><pre class="codeinput">k = 28;                         <span class="comment">% thermal conductivity (W/m.K)</span>
+cp = 1100;                      <span class="comment">% specific heat (J/kg K)</span>
+rho = 2551.7;                   <span class="comment">% density (kg/m^3)</span>
+alpha = k/(cp*rho);             <span class="comment">% alpha (1/sec)</span>
+
+BTMS=input(<span class="string">'Is the BTMS convection based (1) or conduction based (2) ? '</span>);
+disp(<span class="string">' '</span>)
+
+C_rate = input(<span class="string">'C rate (C) = '</span>); <span class="comment">% Charge/discharge rate</span>
+
+tfinal = input(<span class="string">'Time Final (s) = '</span>);
+
+<span class="keyword">if</span> BTMS==1
+    h = input(<span class="string">'Convective Heat Transfer coefficient (W/Km2) (Range:0 to 10e5) h = '</span>);
+    Bi = h*gs/k;
+    term = Bi;
+    n = h;
+    name = <span class="string">'h'</span>;
+<span class="keyword">elseif</span> BTMS==2
+    k_cool=input(<span class="string">'Conductive Heat Transfer coefficient (W/mK) (Range:0 to 27) k = '</span>);
+    term = (k_cool/k);
+    n = k_cool;
+    name = <span class="string">'k'</span>;
+<span class="keyword">end</span>
+
+R             = 1.33e-3 ;               <span class="comment">% Ohm Resistance of the battery</span>
+R_tabP        = 3.37e-5 ;               <span class="comment">% Ohm Resistance of the positive tab</span>
+W_tabP        = 0.08 ;                  <span class="comment">% Positive tab width</span>
+R_tabN        = 3.48e-5 ;               <span class="comment">% Ohm Resistance of the negative tab</span>
+W_tabN        = 0.08 ;                  <span class="comment">% Negative tab width</span>
+Bat_cap       = 53.0 ;                  <span class="comment">% Battery capacity (Ah)</span>
+I             = Bat_cap * C_rate ;      <span class="comment">% Current of the battery: 5C * 53Ah</span>
+</pre><h2 id="5">Time parameters</h2><pre class="codeinput">time = 0;
+dt = 0.9*(gs^2)/(4*alpha);
+
+Fo = (alpha*dt)/(gs^2);            <span class="comment">% Fourier Number</span>
+</pre><h2 id="6">Setting boundary conditions</h2><pre class="codeinput">Twall = 25;
+phi = Twall*ones(res);
+</pre><h2 id="7">Sensor 1</h2><pre class="codeinput">X_sensor1 = 60;
+Y_sensor1 = 60;
+Tt1 = [time phi(Y_sensor1, X_sensor1)] ;   <span class="comment">% Tt=[0 25]</span>
+</pre><h2 id="8">Sensor 2</h2><pre class="codeinput">X_sensor2 = 10;
+Y_sensor2 = 15;
+Tt2 = [time phi(Y_sensor2, X_sensor2)] ;   <span class="comment">% Tt=[0 25]</span>
+</pre><h2 id="9">Heat Flux Calculation</h2><pre class="codeinput">qtab_neg = ((I^2)*R_tabN/(W_tabN^2));
+qtab_pos = ((I^2)*R_tabP/(W_tabP^2));
+
+<span class="comment">% Creating a copy of phi</span>
+phi_old = phi;
+
+tic
+<span class="keyword">while</span> time &lt; tfinal
+    <span class="keyword">for</span> i=1:res
+        <span class="keyword">for</span> j=1:res
+            <span class="comment">% Bottom Left Corner</span>
+            <span class="keyword">if</span> (i == 1 &amp;&amp; j == 1)
+                phi(i,j) = 0.5*(phi_old(i,j+1)+phi_old(i+1,j));
+
+                <span class="comment">% Bottom Right Corner</span>
+            <span class="keyword">elseif</span> (i == res &amp;&amp; j == 1)
+                phi(i,j) = 0.5*(phi_old(i,j+1)+phi_old(i-1,j));
+
+                <span class="comment">% Top Left Corner</span>
+            <span class="keyword">elseif</span> (i == 1 &amp;&amp; j == res)
+
+                phi(i,j) = 0.5*(phi_old(i,j-1)+phi_old(i+1,j));
+
+                <span class="comment">% Top Right Corner</span>
+            <span class="keyword">elseif</span> (i == res &amp;&amp; j == res)
+
+                phi(i,j) = 0.5*(phi_old(i,j-1)+phi_old(i-1,j));
+
+                <span class="comment">% Bottom Edge</span>
+            <span class="keyword">elseif</span> (j == 1)
+
+                phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j+1) +phi_old(i+1,j) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+
+                <span class="comment">% Right Edge</span>
+            <span class="keyword">elseif</span> (j ~= res &amp;&amp; i == res)
+
+                phi(i,j) = Fo*(phi_old(i,j+1) +2*phi_old(i-1,j) +phi_old(i,j-1) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+
+                <span class="comment">% Left Edge</span>
+            <span class="keyword">elseif</span> (j ~= res &amp;&amp; i == 1)
+
+                phi(i,j) = Fo*(phi_old(i,j+1) +2*phi_old(i+1,j) +phi_old(i,j-1) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Top Edge Gaps</span>
+    <span class="keyword">for</span> i = [2:left1-1  left2+1:right1-1  right2+1:res-1]
+        <span class="keyword">for</span> j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*term*Twall +(1/Fo -4 -2*term)*phi_old(i,j));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Negative Tab</span>
+    <span class="keyword">for</span> i = left1:left2
+        <span class="keyword">for</span> j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*gs*qtab_neg/387 +(1/Fo -4)*phi_old(i,j));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Positive Tab</span>
+    <span class="keyword">for</span> i = right1:right2
+        <span class="keyword">for</span> j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*gs*qtab_pos/387 +(1/Fo -4)*phi_old(i,j));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Internal Domain</span>
+    <span class="keyword">for</span> i = 2:res-1
+        <span class="keyword">for</span> j = 2:res-1
+            qgen = ((I^2)*R)/(W*L*0.011);
+            phi(i,j) = phi_old(i,j)+Fo*(phi_old(i,j+1)-4*phi_old(i,j) +phi_old(i,j-1) +phi_old(i+1,j) +phi_old(i-1,j)) +(qgen*dt)/(rho*cp);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    phi_old = phi;
+    time = time + dt;
+
+    Tt1 = [Tt1 ; time phi(Y_sensor1, X_sensor1)] ; <span class="comment">%% Tt1= [0 25 ; 0.1 25.1]</span>
+    Tt2 = [Tt2 ; time phi(Y_sensor2, X_sensor2)] ; <span class="comment">%% Tt2= [0 25 ; 0.1 25.1]</span>
+
+<span class="keyword">end</span>
+toc
+phi=transpose(phi);
+</pre><h2 id="10">Plot results</h2><pre class="codeinput">load <span class="string">colormap.mat</span>
+
+<span class="comment">% Create meshgrid of plotting points</span>
+[xplot, yplot] = meshgrid(linspace(0, W, res), linspace(0, L, res));
+
+<span class="comment">% Find Temp Gradient</span>
+[ux, uy] = gradient(phi);
+ux = -ux;
+uy = -uy;
+
+mag = sqrt(ux.^2 + uy.^2);
+uxn = ux ./ mag;
+uyn = uy ./ mag;
+
+disp(<span class="string">' '</span>)
+disp(<span class="string">'Value of Maximum Temperature (C)'</span>)
+disp(max(max(phi)))
+disp(<span class="string">'Nodal Position of Maximum Temperature'</span>)
+[X, Y] = find(ismember(phi, max(phi(:))));
+fprintf(<span class="string">'i = %d j = %d'</span>,Y,X)
+disp(<span class="string">' '</span>)
+disp(<span class="string">'Largest Temperature Difference (C)'</span>)
+disp(max(max(phi))-min(min(phi)))
+
+figure
+quiver(xplot, yplot, uxn, uyn);
+title(<span class="string">'Normalised Heat Flux Field'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+xlabel(<span class="string">'x'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+ylabel(<span class="string">'y'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+axis <span class="string">equal</span>
+axis <span class="string">tight</span>
+
+<span class="comment">% Sensor 1</span>
+figure
+plot(Tt1(1:end,1),Tt1(1:end,2));
+title_text=sprintf(<span class="string">'Temperature variation vs time at point (%d,%d) '</span>,X_sensor1,Y_sensor1);
+title(title_text,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14);
+xlabel(<span class="string">'Time (s)'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+ylabel(<span class="string">'Temperature (C)'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+
+<span class="comment">% Sensor 2</span>
+figure
+plot(Tt2(1:end,1),Tt2(1:end,2));
+title_text=sprintf(<span class="string">'Temperature variation vs time at point (%d,%d) '</span>,X_sensor2,Y_sensor2);
+title(title_text,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14);
+xlabel(<span class="string">'Time (s)'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+ylabel(<span class="string">'Temperature (C)'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+
+figure
+contourf(xplot, yplot, phi,10);
+colorbar
+colormap(map)
+caxis([26.8 64.2])
+title_text=sprintf(<span class="string">'%dC charging for %ds, %s = %d '</span>,C_rate,tfinal,name,n);
+title(title_text,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14);
+xlabel(<span class="string">'x'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+ylabel(<span class="string">'y'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,14)
+hcb=colorbar;
+title(hcb,<span class="string">'Temperature'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="string">'Fontsize'</span>,10)
+view(2)
+axis <span class="string">equal</span>
+
+file_name = sprintf(<span class="string">'CR%d_tf%d '</span>,C_rate,tfinal);
+saveas(gcf,file_name,<span class="string">'pdf'</span>);
+
+dbtype <span class="string">Unsteady_Battery_04_22.m</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clc,clear,close all
+%%  FDM solver for Laplace's equation in 2D
+%% Setting
+disp('Heat Conduction Equation solver for 2D Li-ion Battery')
+disp(' ')
+
+% Resolution
+res = 120;               % Multiples of 15 only
+left1 = res/15;
+left2 = res*7/15;
+right1 = res*8/15;
+right2 = res*14/15;
+
+% Width of domain
+W = 0.2;
+
+% Height of domain
+L = 0.2;
+
+% Grid spacing
+gs = W / (res - 1);
+
+%% Battery and Thermal Characteristics
+
+k = 28;                         % thermal conductivity (W/m.K)
+cp = 1100;                      % specific heat (J/kg K)
+rho = 2551.7;                   % density (kg/m^3)
+alpha = k/(cp*rho);             % alpha (1/sec)
+
+BTMS=input('Is the BTMS convection based (1) or conduction based (2) ? ');
+disp(' ')
+
+C_rate = input('C rate (C) = '); % Charge/discharge rate
+
+tfinal = input('Time Final (s) = ');
+
+if BTMS==1
+    h = input('Convective Heat Transfer coefficient (W/Km2) (Range:0 to 10e5) h = ');
+    Bi = h*gs/k;
+    term = Bi;
+    n = h;
+    name = 'h';
+elseif BTMS==2
+    k_cool=input('Conductive Heat Transfer coefficient (W/mK) (Range:0 to 27) k = ');
+    term = (k_cool/k);
+    n = k_cool;
+    name = 'k';
+end
+
+R             = 1.33e-3 ;               % Ohm Resistance of the battery
+R_tabP        = 3.37e-5 ;               % Ohm Resistance of the positive tab
+W_tabP        = 0.08 ;                  % Positive tab width
+R_tabN        = 3.48e-5 ;               % Ohm Resistance of the negative tab
+W_tabN        = 0.08 ;                  % Negative tab width
+Bat_cap       = 53.0 ;                  % Battery capacity (Ah)
+I             = Bat_cap * C_rate ;      % Current of the battery: 5C * 53Ah
+
+%% Time parameters
+
+time = 0;
+dt = 0.9*(gs^2)/(4*alpha);
+
+Fo = (alpha*dt)/(gs^2);            % Fourier Number
+
+%% Setting boundary conditions
+
+Twall = 25;
+phi = Twall*ones(res);
+
+%% Sensor 1
+X_sensor1 = 60;
+Y_sensor1 = 60;
+Tt1 = [time phi(Y_sensor1, X_sensor1)] ;   % Tt=[0 25]
+
+%% Sensor 2
+X_sensor2 = 10;
+Y_sensor2 = 15;
+Tt2 = [time phi(Y_sensor2, X_sensor2)] ;   % Tt=[0 25]
+
+%% Heat Flux Calculation
+
+qtab_neg = ((I^2)*R_tabN/(W_tabN^2));
+qtab_pos = ((I^2)*R_tabP/(W_tabP^2));
+
+% Creating a copy of phi
+phi_old = phi;
+
+tic
+while time < tfinal
+    for i=1:res
+        for j=1:res
+            % Bottom Left Corner
+            if (i == 1 && j == 1)
+                phi(i,j) = 0.5*(phi_old(i,j+1)+phi_old(i+1,j));
+                
+                % Bottom Right Corner
+            elseif (i == res && j == 1)
+                phi(i,j) = 0.5*(phi_old(i,j+1)+phi_old(i-1,j));
+                
+                % Top Left Corner
+            elseif (i == 1 && j == res)
+                
+                phi(i,j) = 0.5*(phi_old(i,j-1)+phi_old(i+1,j));
+                
+                % Top Right Corner
+            elseif (i == res && j == res)
+                
+                phi(i,j) = 0.5*(phi_old(i,j-1)+phi_old(i-1,j));
+                
+                % Bottom Edge
+            elseif (j == 1)
+                
+                phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j+1) +phi_old(i+1,j) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+                
+                % Right Edge
+            elseif (j ~= res && i == res)
+                
+                phi(i,j) = Fo*(phi_old(i,j+1) +2*phi_old(i-1,j) +phi_old(i,j-1) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+                
+                % Left Edge
+            elseif (j ~= res && i == 1)
+                
+                phi(i,j) = Fo*(phi_old(i,j+1) +2*phi_old(i+1,j) +phi_old(i,j-1) +2*term*Twall +((1/Fo) -4 -(2*term))*phi_old(i,j));
+                
+            end
+        end
+    end
+    
+    % Top Edge Gaps
+    for i = [2:left1-1  left2+1:right1-1  right2+1:res-1]
+        for j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*term*Twall +(1/Fo -4 -2*term)*phi_old(i,j));
+        end
+    end
+    
+    % Negative Tab
+    for i = left1:left2
+        for j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*gs*qtab_neg/387 +(1/Fo -4)*phi_old(i,j));
+        end
+    end
+    
+    % Positive Tab
+    for i = right1:right2
+        for j = res
+            phi(i,j) = Fo*(phi_old(i-1,j) +2*phi_old(i,j-1) +phi_old(i+1,j) +2*gs*qtab_pos/387 +(1/Fo -4)*phi_old(i,j));
+        end
+    end
+    
+    % Internal Domain
+    for i = 2:res-1
+        for j = 2:res-1
+            qgen = ((I^2)*R)/(W*L*0.011);
+            phi(i,j) = phi_old(i,j)+Fo*(phi_old(i,j+1)-4*phi_old(i,j) +phi_old(i,j-1) +phi_old(i+1,j) +phi_old(i-1,j)) +(qgen*dt)/(rho*cp);
+        end
+    end
+    
+    phi_old = phi;
+    time = time + dt;
+    
+    Tt1 = [Tt1 ; time phi(Y_sensor1, X_sensor1)] ; %% Tt1= [0 25 ; 0.1 25.1]
+    Tt2 = [Tt2 ; time phi(Y_sensor2, X_sensor2)] ; %% Tt2= [0 25 ; 0.1 25.1]
+    
+end
+toc
+phi=transpose(phi);
+
+%% Plot results
+
+load colormap.mat
+
+% Create meshgrid of plotting points
+[xplot, yplot] = meshgrid(linspace(0, W, res), linspace(0, L, res));
+
+% Find Temp Gradient
+[ux, uy] = gradient(phi);
+ux = -ux;
+uy = -uy;
+
+mag = sqrt(ux.^2 + uy.^2);
+uxn = ux ./ mag;
+uyn = uy ./ mag;
+
+disp(' ')
+disp('Value of Maximum Temperature (C)')
+disp(max(max(phi)))
+disp('Nodal Position of Maximum Temperature')
+[X, Y] = find(ismember(phi, max(phi(:))));
+fprintf('i = %d j = %d',Y,X)
+disp(' ')
+disp('Largest Temperature Difference (C)')
+disp(max(max(phi))-min(min(phi)))
+
+figure
+quiver(xplot, yplot, uxn, uyn);
+title('Normalised Heat Flux Field','interpreter','latex','Fontsize',14)
+xlabel('x','interpreter','latex','Fontsize',14)
+ylabel('y','interpreter','latex','Fontsize',14)
+axis equal
+axis tight
+
+% Sensor 1
+figure
+plot(Tt1(1:end,1),Tt1(1:end,2));
+title_text=sprintf('Temperature variation vs time at point (%d,%d) ',X_sensor1,Y_sensor1);
+title(title_text,'interpreter','latex','Fontsize',14);
+xlabel('Time (s)','interpreter','latex','Fontsize',14)
+ylabel('Temperature (C)','interpreter','latex','Fontsize',14)
+
+% Sensor 2
+figure
+plot(Tt2(1:end,1),Tt2(1:end,2));
+title_text=sprintf('Temperature variation vs time at point (%d,%d) ',X_sensor2,Y_sensor2);
+title(title_text,'interpreter','latex','Fontsize',14);
+xlabel('Time (s)','interpreter','latex','Fontsize',14)
+ylabel('Temperature (C)','interpreter','latex','Fontsize',14)
+
+figure
+contourf(xplot, yplot, phi,10);
+colorbar
+colormap(map)
+caxis([26.8 64.2])
+title_text=sprintf('%dC charging for %ds, %s = %d ',C_rate,tfinal,name,n);
+title(title_text,'interpreter','latex','Fontsize',14);
+xlabel('x','interpreter','latex','Fontsize',14)
+ylabel('y','interpreter','latex','Fontsize',14)
+hcb=colorbar;
+title(hcb,'Temperature','interpreter','latex','Fontsize',10)
+view(2)
+axis equal
+
+file_name = sprintf('CR%d_tf%d ',C_rate,tfinal);
+saveas(gcf,file_name,'pdf');
+
+dbtype Unsteady_Battery_04_22.m
+
+##### SOURCE END #####
+--></body></html>
