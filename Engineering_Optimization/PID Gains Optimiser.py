@@ -63,13 +63,24 @@ workbook = pd.read_excel("Sim3_Results.xlsx",
             engine = 'openpyxl')
 
 # Split data from the 4 Simulation Modes
-sim0_data = workbook[workbook['Simulation Mode']==0]    # Nonlinear model
-sim1_data = workbook[workbook['Simulation Mode']==1]    # Actuator dynamics only
-sim2_data = workbook[workbook['Simulation Mode']==2]    # Actuator dynamics and noise on measurements
+# sim0_data = workbook[workbook['Simulation Mode']==0]    # Nonlinear model
+# sim1_data = workbook[workbook['Simulation Mode']==1]    # Actuator dynamics only
+# sim2_data = workbook[workbook['Simulation Mode']==2]    # Actuator dynamics and noise on measurements
 sim3_data = workbook[workbook['Simulation Mode']==3]    # Actuator dynamics,noisy measurements, and hold period
 
 # sim_data_all = [sim0_data,sim1_data,sim2_data,sim3_data]
 sim_data_all = [sim3_data]
+
+##################################################### Filtering data set to most elite solutions
+
+optimal_data_samples = sim3_data
+
+sample_scores = optimal_data_samples[['Max Lateral Error', 'Max Speed Error','Max Lateral Acceleration','Max Longitudinal Acceleration']]
+sample_scores = sample_scores.to_numpy().sum(axis=1)
+
+ranking = np.argsort(sample_scores)
+
+sim3_data = sim3_data.iloc[ranking[0:20],:]
 
 ##################################################### Optimising hyperparameter of surrogate model
 
@@ -241,6 +252,7 @@ def basis(i,n):
 def hooke_jeeves(f, x0, alpha, eps, gamma, rho):
     
     x_history = []
+    y_history = []
     n = len(x0)
     x_best = x0
     
@@ -278,12 +290,13 @@ def hooke_jeeves(f, x0, alpha, eps, gamma, rho):
                 if obj_temp < obj_best:
                     x_best = x_temp
                     x_history.append(x_best)
+                    y_history.append(obj_temp)
                     improved = True
                 
         if improved == False:
             alpha *= gamma
     
-    return x_history
+    return x_history, y_history
 
 ##################################################### Design Point optimisation of the Surrogate Models
 
@@ -328,7 +341,7 @@ for sim_mode in estimator_functions:
     # t.toc()
     
     t.tic()
-    x_history = hooke_jeeves(f, x0, alpha = 0.1, eps = 0.0001 , gamma = 0.9, rho = 10)
+    x_history, y_history = hooke_jeeves(f, x0, alpha = 0.1, eps = 0.0001 , gamma = 0.9, rho = 10)
     t.toc()
     
     x_best = x_history[-1]
@@ -363,4 +376,8 @@ for sim_mode in estimator_functions:
     
     plt.plot(range(len(x_history)),[x[2] for x in x_history])
     plt.title('K_long evolution')
+    plt.show()
+    
+    plt.plot(range(len(y_history)),y_history)
+    plt.title('Objective function')
     plt.show()
