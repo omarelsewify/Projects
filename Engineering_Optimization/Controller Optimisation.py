@@ -1,4 +1,4 @@
-# PID Gains Optimiser 
+# Look-ahead controller optimiser 
 
 import numpy as np
 import pandas as pd
@@ -73,14 +73,14 @@ sim_data_all = [sim3_data]
 
 ##################################################### Filtering data set to most elite solutions
 
-optimal_data_samples = sim3_data
+# optimal_data_samples = sim3_data
 
-sample_scores = optimal_data_samples[['Max Lateral Error', 'Max Speed Error','Max Lateral Acceleration','Max Longitudinal Acceleration']]
-sample_scores = sample_scores.to_numpy().sum(axis=1)
+# sample_scores = optimal_data_samples[['Max Lateral Error', 'Max Speed Error','Max Lateral Acceleration','Max Longitudinal Acceleration']]
+# sample_scores = sample_scores.to_numpy().sum(axis=1)
 
-ranking = np.argsort(sample_scores)
+# ranking = np.argsort(sample_scores)
 
-sim3_data = sim3_data.iloc[ranking[0:20],:]
+# sim3_data = sim3_data.iloc[ranking[0:20],:]
 
 ##################################################### Optimising hyperparameter of surrogate model
 
@@ -272,7 +272,8 @@ def hooke_jeeves(f, x0, alpha, eps, gamma, rho):
         return [mle_c, mse_c, may_c, max_c, K_la_c, x_la_c, K_long_c]
     
     def obj_function(x,f,c,rho):
-        return  sum(f(x) + (sum(map(lambda i: i**2 , c(x))))*rho)
+        weights = [10, 10, 1, 1]
+        return  sum((f(x) + (sum(map(lambda i: i**2 , c(x))))*rho)*weights)     # Quadratic Penalty
     
     while alpha > eps:
         
