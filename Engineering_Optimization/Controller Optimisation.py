@@ -12,7 +12,8 @@ from pytictoc import TicToc
 
 t = TicToc()
 
-plotting = 0
+plotting = 1
+savedata = 0
 
 class TrainTest:
     def __init__(self):
@@ -80,7 +81,7 @@ sim_data_all = [sim3_data]
 
 # ranking = np.argsort(sample_scores)
 
-# sim3_data = sim3_data.iloc[ranking[0:20],:]
+sim3_data = sim3_data.iloc[0:31,:] # consider only the first 31 rows, the rest are results of simulation
 
 ##################################################### Optimising hyperparameter of surrogate model
 
@@ -119,10 +120,10 @@ for sim_data in sim_data_all:
     for smooth_p in smooth_params:
         # Fit Radial Basis Functions to Simulation Mode 0
         #rbf_functions = ["gaussian","inverse","linear"]
-        rbfi_lat_error = Rbf(k_la, x_la, k_long, max_lat_error, function = "gaussian", smooth = smooth_p)
-        rbfi_speed_error = Rbf(k_la, x_la, k_long, max_speed_error, function = "gaussian", smooth = smooth_p)
-        rbfi_max_ay = Rbf(k_la, x_la, k_long, max_ay, function = "gaussian", smooth = smooth_p)
-        rbfi_max_ax = Rbf(k_la, x_la, k_long, max_ax, function = "gaussian", smooth = smooth_p)
+        rbfi_lat_error = Rbf(k_la, x_la, k_long, max_lat_error, function = "linear", smooth = smooth_p)
+        rbfi_speed_error = Rbf(k_la, x_la, k_long, max_speed_error, function = "linear", smooth = smooth_p)
+        rbfi_max_ay = Rbf(k_la, x_la, k_long, max_ay, function = "linear", smooth = smooth_p)
+        rbfi_max_ax = Rbf(k_la, x_la, k_long, max_ax, function = "linear", smooth = smooth_p)
         
         gen_error_lat_model = cross_validation_estimate(X, max_lat_error, sets, rbfi_lat_error, metric)
         gen_error_speed_model = cross_validation_estimate(X, max_speed_error, sets, rbfi_speed_error, metric)
@@ -141,10 +142,10 @@ for sim_data in sim_data_all:
     optimal_smooth_param_max_ax = smooth_params[np.argmin(est_max_ax[0:])]
 
     # Optimal functions
-    rbfi_lat_error_optimal = Rbf(k_la, x_la, k_long, max_lat_error, function = "gaussian", smooth = optimal_smooth_param_lat)
-    rbfi_speed_error_optimal = Rbf(k_la, x_la, k_long, max_speed_error, function = "gaussian", smooth = optimal_smooth_param_speed)
-    rbfi_max_ay_optimal =  Rbf(k_la, x_la, k_long, max_ay, function = "gaussian", smooth = optimal_smooth_param_max_ay)
-    rbfi_max_ax_optimal =  Rbf(k_la, x_la, k_long, max_ax, function = "gaussian", smooth = optimal_smooth_param_max_ax)
+    rbfi_lat_error_optimal = Rbf(k_la, x_la, k_long, max_lat_error, function = "linear", smooth = optimal_smooth_param_lat)
+    rbfi_speed_error_optimal = Rbf(k_la, x_la, k_long, max_speed_error, function = "linear", smooth = optimal_smooth_param_speed)
+    rbfi_max_ay_optimal =  Rbf(k_la, x_la, k_long, max_ay, function = "linear", smooth = optimal_smooth_param_max_ay)
+    rbfi_max_ax_optimal =  Rbf(k_la, x_la, k_long, max_ax, function = "linear", smooth = optimal_smooth_param_max_ax)
 
     estimator_functions.append([rbfi_lat_error_optimal,rbfi_speed_error_optimal,rbfi_max_ay_optimal,rbfi_max_ax_optimal])
     
@@ -161,12 +162,16 @@ for sim_data in sim_data_all:
         plt.title("Simulator Mode %d" % sim_number)
         plt.plot(smooth_params, est_lat_errors, 'g')
         plt.plot(smooth_params, est_speed_errors, 'b')
-        plt.legend(["Lateral Error Est.", "Speed Error Est"])
+        plt.plot(smooth_params, est_max_ay, 'r')
+        plt.plot(smooth_params, est_max_ax, 'm')
+        plt.legend(["Lateral Error Est.", "Speed Error Est", "Max a_y Estimate", "Max a_x Est"])
         plt.xlabel("Smoothing Parameter")
         plt.xscale('log')
         plt.ylabel("Estimated Generalisation Error")
         plt.plot(optimal_smooth_param_lat,np.amin(est_lat_errors[0:]),'go')
         plt.plot(optimal_smooth_param_speed,np.amin(est_speed_errors[0:]),'bo')
+        plt.plot(optimal_smooth_param_lat,np.amin(est_max_ay[0:]),'ro')
+        plt.plot(optimal_smooth_param_speed,np.amin(est_max_ax[0:]),'mo')
         plt.show()
     
 ##################################################### Cross Entropy with Interior Point Method
@@ -273,7 +278,8 @@ def hooke_jeeves(f, x0, alpha, eps, gamma, rho):
     
     def obj_function(x,f,c,rho):
         weights = [10, 10, 1, 1]
-        return  sum((f(x) + (sum(map(lambda i: i**2 , c(x))))*rho)*weights)     # Quadratic Penalty
+        weighted_c = sum([rho * a * b for a, b in zip(weights, c(x))])
+        return  sum(f(x)) + weighted_c     # Quadratic Penalty
     
     while alpha > eps:
         
@@ -342,7 +348,7 @@ for sim_mode in estimator_functions:
     # t.toc()
     
     t.tic()
-    x_history, y_history = hooke_jeeves(f, x0, alpha = 0.1, eps = 0.0001 , gamma = 0.9, rho = 10)
+    x_history, y_history = hooke_jeeves(f, x0, alpha = 0.1, eps = 0.001 , gamma = 0.9, rho = 10)
     t.toc()
     
     x_best = x_history[-1]
@@ -351,21 +357,21 @@ for sim_mode in estimator_functions:
     print("")
 
     # Save data to excel sheet
-    
-    data2save = [3, x_best[0], x_best[1], x_best[2]]
-    df = pd.DataFrame([data2save])
-    
-    path = "Sim3_Results.xlsx"
-    
-    book = load_workbook(path)
-    writer = pd.ExcelWriter(path, engine='openpyxl')
-    writer.book = book
-    writer.sheets = {ws.title: ws for ws in book.worksheets}
+    if savedata:
+        data2save = [3, x_best[0], x_best[1], x_best[2]]
+        df = pd.DataFrame([data2save])
+        
+        path = "Sim3_Results.xlsx"
+        
+        book = load_workbook(path)
+        writer = pd.ExcelWriter(path, engine='openpyxl')
+        writer.book = book
+        writer.sheets = {ws.title: ws for ws in book.worksheets}
 
-    df.style.set_properties(**{'background-color': 'yellow','color': 'black'})
-    df.to_excel(writer,sheet_name='Sheet1', startrow=writer.sheets['Sheet1'].max_row, index = False,header= False)
+        df.style.set_properties(**{'background-color': 'yellow','color': 'black'})
+        df.to_excel(writer,sheet_name='Sheet1', startrow=writer.sheets['Sheet1'].max_row, index = False,header= False)
 
-    writer.save()
+        writer.save()
     
     plt.plot(range(len(x_history)),[x[0] for x in x_history])
     plt.title('K_la evolution')
