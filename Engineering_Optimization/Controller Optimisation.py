@@ -154,10 +154,10 @@ for sim_data in sim_data_all:
     for smooth_p in smooth_params:
         # Fit Radial Basis Functions to Simulation Mode 0
         #rbf_functions = ["gaussian","inverse","linear"]
-        rbfi_lat_error = Rbf(k_la, x_la, k_long, max_lat_error, function = "linear", smooth = smooth_p)
-        rbfi_speed_error = Rbf(k_la, x_la, k_long, max_speed_error, function = "linear", smooth = smooth_p)
-        rbfi_max_ay = Rbf(k_la, x_la, k_long, max_ay, function = "linear", smooth = smooth_p)
-        rbfi_max_ax = Rbf(k_la, x_la, k_long, max_ax, function = "linear", smooth = smooth_p)
+        rbfi_lat_error = Rbf(k_la, x_la, k_long, max_lat_error, function = "gaussian", smooth = smooth_p)
+        rbfi_speed_error = Rbf(k_la, x_la, k_long, max_speed_error, function = "gaussian", smooth = smooth_p)
+        rbfi_max_ay = Rbf(k_la, x_la, k_long, max_ay, function = "gaussian", smooth = smooth_p)
+        rbfi_max_ax = Rbf(k_la, x_la, k_long, max_ax, function = "gaussian", smooth = smooth_p)
         
         # gen_error_lat_model = cross_validation_estimate(X, max_lat_error, sets_cv, rbfi_lat_error, metric)
         # gen_error_speed_model = cross_validation_estimate(X, max_speed_error, sets_cv, rbfi_speed_error, metric)
@@ -181,10 +181,10 @@ for sim_data in sim_data_all:
     optimal_smooth_param_max_ax = smooth_params[np.argmin(est_max_ax[0:])]
 
     # Optimal functions
-    rbfi_lat_error_optimal = Rbf(k_la, x_la, k_long, max_lat_error, function = "linear", smooth = optimal_smooth_param_lat)
-    rbfi_speed_error_optimal = Rbf(k_la, x_la, k_long, max_speed_error, function = "linear", smooth = optimal_smooth_param_speed)
-    rbfi_max_ay_optimal =  Rbf(k_la, x_la, k_long, max_ay, function = "linear", smooth = optimal_smooth_param_max_ay)
-    rbfi_max_ax_optimal =  Rbf(k_la, x_la, k_long, max_ax, function = "linear", smooth = optimal_smooth_param_max_ax)
+    rbfi_lat_error_optimal = Rbf(k_la, x_la, k_long, max_lat_error, function = "gaussian", smooth = optimal_smooth_param_lat)
+    rbfi_speed_error_optimal = Rbf(k_la, x_la, k_long, max_speed_error, function = "gaussian", smooth = optimal_smooth_param_speed)
+    rbfi_max_ay_optimal =  Rbf(k_la, x_la, k_long, max_ay, function = "gaussian", smooth = optimal_smooth_param_max_ay)
+    rbfi_max_ax_optimal =  Rbf(k_la, x_la, k_long, max_ax, function = "gaussian", smooth = optimal_smooth_param_max_ax)
 
     estimator_functions.append([rbfi_lat_error_optimal,rbfi_speed_error_optimal,rbfi_max_ay_optimal,rbfi_max_ax_optimal])
     
@@ -197,7 +197,7 @@ for sim_data in sim_data_all:
     print('')
     
     # Plotting of Estimated errors vs Smoothing Parameters
-    if 0:
+    if plotting:
         plt.title("Simulator Mode %d" % sim_number)
         plt.plot(smooth_params, est_lat_errors, 'g')
         plt.plot(smooth_params, est_speed_errors, 'b')
@@ -212,7 +212,7 @@ for sim_data in sim_data_all:
         plt.plot(optimal_smooth_param_lat,np.amin(est_max_ay[0:]),'ro')
         plt.plot(optimal_smooth_param_speed,np.amin(est_max_ax[0:]),'mo')
         
-        # plt.savefig('smooth_param.pgf')
+        plt.savefig('smooth_param.pgf')
 
         # plt.show()
 
